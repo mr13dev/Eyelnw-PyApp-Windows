@@ -23,6 +23,7 @@ from gui.video_panel import VideoPanel
 from report.generator import ReportGenerator
 from utils.config import ScanConfig
 from utils.logger import logger
+from utils.settings import SettingsManager
 
 
 class EyelnwApp(ctk.CTk):
@@ -46,8 +47,12 @@ class EyelnwApp(ctk.CTk):
             except Exception:
                 pass
 
+        # Settings manager
+        self.settings = SettingsManager()
+
         # Scanning state & active scanner instance
         self.active_scanner: VideoScanner | None = None
+        self.active_report_generator: ReportGenerator | None = None
         self.scan_thread: threading.Thread | None = None
 
         self._build_layout()
@@ -117,7 +122,9 @@ class EyelnwApp(ctk.CTk):
             on_start_scan=self.start_scan_pipeline,
             on_pause_scan=self.pause_scan,
             on_resume_scan=self.resume_scan,
-            on_cancel_scan=self.cancel_scan
+            on_cancel_scan=self.cancel_scan,
+            on_abort_clips=self.abort_clip_cutting,
+            settings=self.settings
         )
         self.scan_panel.pack(fill="x", pady=(0, 14))
 
@@ -249,13 +256,18 @@ class EyelnwApp(ctk.CTk):
             post_msg = "กำลังตัดคลิปสั้นและสร้างรายงาน HTML..." if enable_clips else "กำลังบันทึกภาพถ่ายและสร้างรายงาน HTML..."
             self._update_progress_safe(100, 100, 0, 0, len(all_matched_events), post_msg)
             duration = time.time() - start_time
-            generator = ReportGenerator()
-            report_path, folder_path = generator.generate_report(
+            self.active_report_generator = ReportGenerator()
+
+            def clip_progress_cb(current, total, group_id):
+                self._update_clip_progress_safe(current, total, group_id)
+
+            report_path, folder_path = self.active_report_generator.generate_report(
                 target=target_profile,
                 events=all_matched_events,
                 scanned_videos=video_paths,
                 scan_duration_sec=duration,
-                enable_clip_cutting=enable_clips
+                enable_clip_cutting=enable_clips,
+                clip_progress_callback=clip_progress_cb
             )
 
             # 5. Notify UI on completion
@@ -265,10 +277,14 @@ class EyelnwApp(ctk.CTk):
             logger.exception("Error during scanning pipeline:")
             self.after(0, lambda err=e: self._on_scan_error(err))
         finally:
+            self.active_report_generator = None
             self.after(0, self.scan_panel.finish_scan)
 
     def _update_progress_safe(self, cur_f, tot_f, cur_t, tot_t, matches, txt):
         self.after(0, lambda: self.scan_panel.update_progress(cur_f, tot_f, cur_t, tot_t, matches, txt))
+
+    def _update_clip_progress_safe(self, current: int, total: int, group_id: int):
+        self.after(0, lambda: self.scan_panel.update_clip_progress(current, total, group_id))
 
     def _on_scan_completed(self, events: list, report_path: Path, folder_path: Path):
         self.result_panel.set_results(events, report_path, folder_path)
@@ -296,3 +312,8 @@ class EyelnwApp(ctk.CTk):
     def cancel_scan(self):
         if self.active_scanner:
             self.active_scanner.cancel()
+
+    def abort_clip_cutting(self):
+        """Signals the active report generator to abort cutting further video clips."""
+        if self.active_report_generator:
+            self.active_report_generator.abort_clip_cutting()

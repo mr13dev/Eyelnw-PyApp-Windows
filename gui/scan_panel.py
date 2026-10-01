@@ -6,24 +6,38 @@ import time
 import customtkinter as ctk
 import torch
 from utils.helpers import format_seconds_to_timestamp
+from utils.settings import SettingsManager
 
 
 class ScanPanel(ctk.CTkFrame):
     """Panel for configuring scan parameters, launching detection, and tracking progress."""
 
-    def __init__(self, master, on_start_scan, on_pause_scan, on_resume_scan, on_cancel_scan, **kwargs):
+    def __init__(
+        self,
+        master,
+        on_start_scan,
+        on_pause_scan,
+        on_resume_scan,
+        on_cancel_scan,
+        on_abort_clips=None,
+        settings: SettingsManager | None = None,
+        **kwargs
+    ):
         super().__init__(master, corner_radius=12, fg_color="#161b22", **kwargs)
 
         self.on_start_scan = on_start_scan
         self.on_pause_scan = on_pause_scan
         self.on_resume_scan = on_resume_scan
         self.on_cancel_scan = on_cancel_scan
+        self.on_abort_clips = on_abort_clips
+        self.settings = settings or SettingsManager()
 
         self.is_scanning = False
         self.is_paused = False
         self.scan_start_epoch = 0.0
 
         self._build_ui()
+        self._load_saved_settings()
 
     def _build_ui(self):
         # Header
@@ -126,6 +140,18 @@ class ScanPanel(ctk.CTkFrame):
         )
         lbl_switch_hint.pack(side="left")
 
+        self.btn_reset_settings = ctk.CTkButton(
+            r3,
+            text="🔄 รีเซ็ตค่าเริ่มต้น",
+            command=self._on_reset_settings,
+            font=("Sarabun", 11),
+            fg_color="#21262d",
+            hover_color="#30363d",
+            height=28,
+            width=120
+        )
+        self.btn_reset_settings.pack(side="right")
+
         # Big CTA Action Button
         self.btn_start = ctk.CTkButton(
             self,
@@ -189,7 +215,7 @@ class ScanPanel(ctk.CTkFrame):
         )
         self.lbl_time_eta.pack(side="right")
 
-        # Control Buttons (Pause / Resume / Cancel)
+        # Control Buttons (Pause / Resume / Cancel / Abort Clips)
         self.ctrl_row = ctk.CTkFrame(self.progress_frame, fg_color="transparent")
         self.ctrl_row.pack(fill="x", padx=14, pady=(0, 14))
 
@@ -219,12 +245,59 @@ class ScanPanel(ctk.CTkFrame):
         )
         self.btn_cancel.pack(side="left")
 
+        self.btn_abort_clips = ctk.CTkButton(
+            self.ctrl_row,
+            text="⏭ หยุดตัดคลิป",
+            command=self._on_abort_clips,
+            state="disabled",
+            fg_color="#d29922",
+            hover_color="#bb8009",
+            font=("Sarabun", 12),
+            width=120,
+            height=30
+        )
+        self.btn_abort_clips.pack(side="left", padx=(8, 0))
+
+    def _load_saved_settings(self):
+        """กู้คืนค่า widget จาก settings.json"""
+        self.combo_model.set(self.settings.get("model_choice"))
+        thresh = float(self.settings.get("match_threshold", 0.60))
+        self.slider_thresh.set(thresh)
+        self.combo_speed.set(self.settings.get("scan_speed"))
+
+        if self.settings.get("enable_clip_cutting"):
+            self.switch_cut_clips.select()
+        else:
+            self.switch_cut_clips.deselect()
+
+        self._on_thresh_change(thresh)
+
+    def _save_current_settings(self):
+        """บันทึกค่าปัจจุบันทั้งหมดลง settings.json"""
+        self.settings.set("model_choice", self.combo_model.get())
+        self.settings.set("match_threshold", float(self.slider_thresh.get()))
+        self.settings.set("scan_speed", self.combo_speed.get())
+        self.settings.set("enable_clip_cutting", bool(self.switch_cut_clips.get()))
+
+    def _on_reset_settings(self):
+        """รีเซ็ตทุกค่ากลับสู่ค่าเริ่มต้นและอัปเดต UI"""
+        self.settings.reset_all()
+        self._load_saved_settings()
+
+    def _on_abort_clips(self):
+        """ส่งสัญญาณสั่งหยุดตัดคลิป"""
+        self.btn_abort_clips.configure(state="disabled", text="กำลังหยุดตัดคลิป...")
+        if self.on_abort_clips:
+            self.on_abort_clips()
+
     def _on_thresh_change(self, value):
         self.lbl_thresh_val.configure(text=f"{int(round(value * 100))}%")
 
     def _on_start_clicked(self):
         if self.is_scanning:
             return
+
+        self._save_current_settings()
 
         self.is_scanning = True
         self.is_paused = False
@@ -233,6 +306,7 @@ class ScanPanel(ctk.CTkFrame):
         self.btn_start.configure(state="disabled", text="⏳ กำลังประมวลผล...")
         self.btn_pause.configure(state="normal", text="⏸ หยุดชั่วคราว")
         self.btn_cancel.configure(state="normal")
+        self.btn_abort_clips.configure(state="disabled", text="⏭ หยุดตัดคลิป")
         self.progress_bar.set(0.0)
         self.lbl_percent.configure(text="0%")
 
@@ -298,6 +372,16 @@ class ScanPanel(ctk.CTkFrame):
             text=f"เวลาที่ใช้: {format_seconds_to_timestamp(elapsed)}  (วิดีโอ: {format_seconds_to_timestamp(current_time)} / {format_seconds_to_timestamp(total_time)})"
         )
 
+    def update_clip_progress(self, current: int, total: int, group_id: int):
+        """อัปเดต progress สำหรับขั้นตอนตัดคลิป"""
+        fraction = max(0.0, min(1.0, current / max(1, total)))
+        self.progress_bar.set(fraction)
+        self.lbl_percent.configure(text=f"{int(fraction * 100)}%")
+        self.lbl_status.configure(text=f"✂️ กำลังตัดคลิป #{group_id} ({current}/{total})")
+
+        if self.btn_abort_clips.cget("state") != "normal":
+            self.btn_abort_clips.configure(state="normal", text="⏭ หยุดตัดคลิป")
+
     def finish_scan(self):
         """Resets controls when scan finishes or stops."""
         self.is_scanning = False
@@ -305,3 +389,4 @@ class ScanPanel(ctk.CTkFrame):
         self.btn_start.configure(state="normal", text="🔍 เริ่มค้นหารถเป้าหมาย")
         self.btn_pause.configure(state="disabled", text="⏸ หยุดชั่วคราว", fg_color="#21262d")
         self.btn_cancel.configure(state="disabled")
+        self.btn_abort_clips.configure(state="disabled", text="⏭ หยุดตัดคลิป")

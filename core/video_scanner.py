@@ -160,7 +160,11 @@ class VideoScanner:
                     for v in detected_vehicles:
                         crop = v["cropped_image"]
                         # 2. Match each detected vehicle against target
-                        match_res = self.matcher.match(crop, threshold=self.config.match_threshold)
+                        match_res = self.matcher.match(
+                            crop,
+                            threshold=self.config.match_threshold,
+                            vehicle_class_id=v["class_id"]
+                        )
 
                         if match_res.is_match:
                             # Build annotated frame

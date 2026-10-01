@@ -4,9 +4,13 @@ Helper functions for Eyelnw (timestamps, bounding boxes, file handling).
 
 from pathlib import Path
 import re
-import cv2
 import numpy as np
 from PIL import Image
+
+try:
+    import cv2
+except ImportError:
+    cv2 = None
 
 
 def format_seconds_to_timestamp(seconds: float) -> str:

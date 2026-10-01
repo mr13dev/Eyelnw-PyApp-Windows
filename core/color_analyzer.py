@@ -13,29 +13,49 @@ class ColorAnalyzer:
         self.h_bins = h_bins
         self.s_bins = s_bins
 
-    def compute_histogram(self, image: np.ndarray) -> np.ndarray:
+    def compute_histogram(self, image: np.ndarray, is_motorcycle: bool = False) -> np.ndarray:
         """
         Computes a normalized 2D HSV histogram (Hue & Saturation).
         Ignores extreme dark/light borders when possible.
+        If is_motorcycle is True, crops narrower around vehicle body and masks skin-tones.
         """
         if image is None or image.size == 0:
             return np.zeros((self.h_bins, self.s_bins), dtype=np.float32)
 
         # Convert to HSV
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-
-        # Focus slightly towards center of vehicle to avoid background contamination
         h, w = image.shape[:2]
-        pad_y = max(1, int(h * 0.1))
-        pad_x = max(1, int(w * 0.1))
-        center_crop = hsv[pad_y:h - pad_y, pad_x:w - pad_x]
-        if center_crop.size == 0:
-            center_crop = hsv
+
+        if is_motorcycle:
+            # Focus narrower: crop center body (exclude rider / road edges)
+            pad_y = max(1, int(h * 0.25))
+            pad_x = max(1, int(w * 0.20))
+            center_crop = hsv[pad_y:h - pad_y, pad_x:w - pad_x]
+            if center_crop.size == 0:
+                center_crop = hsv
+
+            # Mask out skin-tones (Hue 0-25, Saturation 30-200, Value 60-255)
+            skin_mask = cv2.inRange(
+                center_crop,
+                np.array([0, 30, 60], dtype=np.uint8),
+                np.array([25, 200, 255], dtype=np.uint8)
+            )
+            mask = cv2.bitwise_not(skin_mask)
+            if cv2.countNonZero(mask) == 0:
+                mask = None
+        else:
+            # Focus slightly towards center of vehicle to avoid background contamination
+            pad_y = max(1, int(h * 0.1))
+            pad_x = max(1, int(w * 0.1))
+            center_crop = hsv[pad_y:h - pad_y, pad_x:w - pad_x]
+            if center_crop.size == 0:
+                center_crop = hsv
+            mask = None
 
         hist = cv2.calcHist(
             [center_crop],
             channels=[0, 1],
-            mask=None,
+            mask=mask,
             histSize=[self.h_bins, self.s_bins],
             ranges=[0, 180, 0, 256]
         )
@@ -56,7 +76,7 @@ class ColorAnalyzer:
         normalized_score = max(0.0, min(1.0, (raw_corr + 1.0) / 2.0))
         return float(normalized_score)
 
-    def get_dominant_color(self, image: np.ndarray) -> str:
+    def get_dominant_color(self, image: np.ndarray, is_motorcycle: bool = False) -> str:
         """
         Determines the dominant vehicle color (Thai & English description).
         Uses median/mean HSV values in the vehicle body region.
@@ -66,8 +86,8 @@ class ColorAnalyzer:
 
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         h, w = image.shape[:2]
-        pad_y = max(1, int(h * 0.15))
-        pad_x = max(1, int(w * 0.15))
+        pad_y = max(1, int(h * 0.25 if is_motorcycle else h * 0.15))
+        pad_x = max(1, int(w * 0.20 if is_motorcycle else w * 0.15))
         roi = hsv[pad_y:h - pad_y, pad_x:w - pad_x]
         if roi.size == 0:
             roi = hsv

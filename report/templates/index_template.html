@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ประวัติและรายการรายงานการค้นหา — Eyelnw</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --card-border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --primary: #2f81f7;
+      --primary-hover: #1a73e8;
+      --success: #238636;
+      --warning: #d29922;
+      --danger: #f85149;
+      --accent: #a371f7;
+      --purple: #8957e5;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Sarabun', -apple-system, sans-serif;
+      line-height: 1.6;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #1f2937, #111827);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 28px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .header-title h1 {
+      font-size: 26px;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-title p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .header-meta {
+      text-align: right;
+    }
+
+    .stat-badge {
+      display: inline-block;
+      background: rgba(47, 129, 247, 0.15);
+      border: 1px solid var(--primary);
+      color: #58a6ff;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* Filter & Search Bar */
+    .filter-bar {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 250px;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-family: 'Sarabun', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary);
+    }
+
+    .sort-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .sort-select {
+      background: #0d1117;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: var(--text);
+      font-family: 'Sarabun', sans-serif;
+      font-size: 14px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* Reports List */
+    .reports-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .report-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      display: grid;
+      grid-template-columns: 200px 1fr 140px;
+      gap: 20px;
+      align-items: center;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+
+    .report-card:hover {
+      border-color: #58a6ff;
+      transform: translateY(-2px);
+    }
+
+    .col-time {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .col-time .date {
+      font-weight: 600;
+      color: #fff;
+      font-size: 15px;
+    }
+
+    .col-time .folder {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: 'Outfit', monospace;
+    }
+
+    .col-details {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .target-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #58a6ff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .target-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
+
+    .tag {
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: #21262d;
+      color: var(--text-muted);
+    }
+
+    .col-stats {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    .confidence-badge {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .conf-high { background-color: var(--success); }
+    .conf-med { background-color: var(--warning); }
+    .conf-low { background-color: var(--accent); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.2s;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      background: var(--card-bg);
+      border: 1px dashed var(--card-border);
+      border-radius: 12px;
+      color: var(--text-muted);
+    }
+
+    .empty-state h3 {
+      font-size: 18px;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--card-border);
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 820px) {
+      .report-card {
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+      .col-stats {
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-title">
+        <h1>📚 ประวัติการค้นหารถเป้าหมาย</h1>
+        <p>หน้ารวมรายงานผลการตรวจจับจากคลิป CCTV ทั้งหมด — Eyelnw</p>
+      </div>
+      <div class="header-meta">
+        <span class="stat-badge" id="report-count-badge">ทั้งหมด {{ total_reports }} รายงาน</span>
+        <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">
+          อัปเดตล่าสุด: {{ updated_time }}
+        </div>
+      </div>
+    </header>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <div class="search-box">
+        <input
+          type="text"
+          id="search-input"
+          class="search-input"
+          placeholder="🔍 ค้นหาตามทะเบียน, ยี่ห้อ, สี, หรือวันที่..."
+          oninput="filterReports()"
+        >
+      </div>
+      <div class="sort-control">
+        <label for="sort-select">เรียงลำดับ:</label>
+        <select id="sort-select" class="sort-select" onchange="sortReports()">
+          <option value="newest">📅 วันที่ล่าสุด</option>
+          <option value="oldest">📅 วันที่เก่าสุด</option>
+          <option value="matches">🎯 จำนวนครั้งที่พบมากสุด</option>
+          <option value="confidence">⭐ ความเชื่อมั่นสูงสุด</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Reports Container -->
+    <div class="reports-grid" id="reports-grid">
+      {% for rep in reports %}
+      <div
+        class="report-card"
+        data-timestamp="{{ rep.timestamp_display }}"
+        data-matches="{{ rep.matches_count }}"
+        data-confidence="{{ rep.highest_confidence }}"
+        data-search="{{ rep.target.plate_number or '' }} {{ rep.target.car_brand or '' }} {{ rep.target.car_model or '' }} {{ rep.target.car_color or '' }} {{ rep.timestamp_display }} {{ rep.folder_name }}"
+      >
+        <div class="col-time">
+          <div class="date">📅 {{ rep.timestamp_display }}</div>
+          <div class="folder">{{ rep.folder_name }}</div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+            ⏱ สแกน {{ rep.duration_display }}
+          </div>
+        </div>
+
+        <div class="col-details">
+          <div class="target-title">
+            🚗 {{ rep.target.car_brand or 'ไม่ระบุยี่ห้อ' }} {{ rep.target.car_model or '' }}
+            {% if rep.target.plate_number %}
+            <span style="color: #fff; background: #21262d; padding: 2px 8px; border-radius: 4px; font-family: 'Outfit', sans-serif;">
+              {{ rep.target.plate_number }}
+            </span>
+            {% endif %}
+          </div>
+          <div class="target-tags">
+            <span class="tag">🎨 สี: {{ rep.target.car_color or 'ตามรูปภาพ' }}</span>
+            <span class="tag">📹 วิดีโอ: {{ rep.total_videos }} ไฟล์</span>
+            <span class="tag">🎯 พบ: <strong>{{ rep.matches_count }}</strong> ครั้ง</span>
+          </div>
+        </div>
+
+        <div class="col-stats">
+          {% if rep.matches_count > 0 %}
+          <span class="confidence-badge {% if rep.highest_confidence >= 0.80 %}conf-high{% elif rep.highest_confidence >= 0.65 %}conf-med{% else %}conf-low{% endif %}">
+            {{ "%.1f"|format(rep.highest_confidence * 100) }}% สูงสุด
+          </span>
+          {% else %}
+          <span class="tag" style="color: #8b949e;">ไม่พบรถ</span>
+          {% endif %}
+
+          <a href="{{ rep.relative_path }}" class="btn btn-primary" target="_blank">
+            📄 เปิดรายงาน
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+
+      {% if reports|length == 0 %}
+      <div class="empty-state" id="empty-state">
+        <h3>ยังไม่มีรายงานการค้นหา</h3>
+        <p>เมื่อทำการสแกนวิดีโอ CCTV รายงานผลจะถูกรวบรวมและแสดงในหน้านี้โดยอัตโนมัติ</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Eyelnw Vehicle Investigation System • หน้ารายงานสรุปแบบรวมศูนย์</p>
+    </footer>
+  </div>
+
+  <script>
+    function filterReports() {
+      const query = document.getElementById("search-input").value.toLowerCase().trim();
+      const cards = document.querySelectorAll(".report-card");
+      let visibleCount = 0;
+
+      cards.forEach(card => {
+        const searchText = (card.getAttribute("data-search") || "").toLowerCase();
+        if (!query || searchText.includes(query)) {
+          card.style.display = "grid";
+          visibleCount++;
+        } else {
+          card.style.display = "none";
+        }
+      });
+
+      const badge = document.getElementById("report-count-badge");
+      if (badge) {
+        badge.innerText = `แสดง ${visibleCount} / ${cards.length} รายงาน`;
+      }
+    }
+
+    function sortReports() {
+      const sortVal = document.getElementById("sort-select").value;
+      const grid = document.getElementById("reports-grid");
+      const cards = Array.from(grid.querySelectorAll(".report-card"));
+
+      cards.sort((a, b) => {
+        if (sortVal === "newest") {
+          return (b.getAttribute("data-timestamp") || "").localeCompare(a.getAttribute("data-timestamp") || "");
+        } else if (sortVal === "oldest") {
+          return (a.getAttribute("data-timestamp") || "").localeCompare(b.getAttribute("data-timestamp") || "");
+        } else if (sortVal === "matches") {
+          return parseInt(b.getAttribute("data-matches") || 0) - parseInt(a.getAttribute("data-matches") || 0);
+        } else if (sortVal === "confidence") {
+          return parseFloat(b.getAttribute("data-confidence") || 0) - parseFloat(a.getAttribute("data-confidence") || 0);
+        }
+        return 0;
+      });
+
+      cards.forEach(card => grid.appendChild(card));
+    }
+  </script>
+</body>
+</html>

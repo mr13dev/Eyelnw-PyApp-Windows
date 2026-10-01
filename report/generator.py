@@ -5,7 +5,10 @@ HTML and JSON report generator for Eyelnw vehicle detection scans.
 from datetime import datetime
 import json
 from pathlib import Path
-import cv2
+try:
+    import cv2
+except ImportError:
+    cv2 = None
 from jinja2 import Environment, FileSystemLoader
 
 from core.target_loader import TargetProfile
@@ -22,6 +25,12 @@ class ReportGenerator:
         self.templates_dir = templates_dir or Path(__file__).resolve().parent / "templates"
         self.env = Environment(loader=FileSystemLoader(str(self.templates_dir)))
         self.clip_cutter = VideoClipCutter()
+        self._abort_clips = False
+
+    def abort_clip_cutting(self):
+        """Signals to stop cutting clips immediately. Completed clips and screenshots are kept."""
+        self._abort_clips = True
+        logger.info("Abort clip cutting requested.")
 
     def generate_report(
         self,
@@ -30,7 +39,8 @@ class ReportGenerator:
         scanned_videos: list[Path],
         output_base_dir: Path | None = None,
         scan_duration_sec: float = 0.0,
-        enable_clip_cutting: bool = True
+        enable_clip_cutting: bool = True,
+        clip_progress_callback=None
     ) -> tuple[Path, Path]:
         """
         Creates a complete scan report with screenshots, optional clips, and HTML summary.
@@ -61,17 +71,23 @@ class ReportGenerator:
         view_events = []
         highest_conf = 0.0
 
-        for event in events:
+        for i, event in enumerate(events):
             time_tag = event.best_detection.timestamp_str.replace(":", "")
             shot_name = f"match_{event.group_id:03d}_{time_tag}.jpg"
             shot_path = screenshots_dir / shot_name
             self.clip_cutter.save_screenshot(event.best_detection.annotated_frame, shot_path)
             event.screenshot_path = shot_path
 
-            # Cut short clip if enabled
+            # Cut short clip if enabled and not aborted
             actual_clip = None
-            if enable_clip_cutting:
-                clip_name = f"clip_{event.group_id:03d}_{time_tag}.mp4"
+            clip_name = f"clip_{event.group_id:03d}_{time_tag}.mp4"
+            if enable_clip_cutting and not self._abort_clips:
+                if clip_progress_callback:
+                    try:
+                        clip_progress_callback(i + 1, len(events), event.group_id)
+                    except Exception:
+                        pass
+
                 clip_path = clips_dir / clip_name
                 actual_clip = self.clip_cutter.cut_clip(
                     source_video=event.video_path,
@@ -153,6 +169,17 @@ class ReportGenerator:
         json_file_path = data_dir / "results.json"
         with open(json_file_path, "w", encoding="utf-8") as f:
             json.dump(json_data, f, ensure_ascii=False, indent=2)
+
+        # 5. Update index.html
+        try:
+            from report.index_generator import ReportIndexGenerator
+            index_gen = ReportIndexGenerator(base_dir, templates_dir=self.templates_dir)
+            index_gen.generate_index()
+        except Exception as e:
+            logger.warning(f"Could not update index.html: {e}")
+
+        # Reset abort flag
+        self._abort_clips = False
 
         logger.info(f"Report generated successfully: {report_html_path}")
         return report_html_path, scan_folder

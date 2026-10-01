@@ -27,6 +27,22 @@ class MatchResult:
 class VehicleMatcher:
     """Matches candidate vehicle crops against a TargetProfile."""
 
+    # Class-specific matching weight profiles
+    WEIGHT_PROFILES = {
+        "car": {
+            "color": 0.25,
+            "feature": 0.25,
+            "deep": 0.40,
+            "ocr": 0.10
+        },
+        "motorcycle": {
+            "color": 0.15,       # reduced — motorcycle has low color surface area
+            "feature": 0.15,     # reduced — ORB is noisy on small items
+            "deep": 0.60,        # increased — ResNet50 is best for motorcycle shape
+            "ocr": 0.10
+        }
+    }
+
     def __init__(
         self,
         target: TargetProfile,
@@ -40,22 +56,32 @@ class VehicleMatcher:
         self.feature_extractor = feature_extractor or FeatureExtractor()
         self.plate_reader = plate_reader or PlateReader()
 
-        # Configurable weights (Blueprint specifies 25% color, 25% feature, 40% deep, 10% ocr)
-        self.weights = weights or {
-            "color": 0.25,
-            "feature": 0.25,
-            "deep": 0.40,
-            "ocr": 0.10
-        }
+        # Custom weights if explicitly provided, else WEIGHT_PROFILES used dynamically
+        self.weights = weights
 
         # Initialize ORB & Brute Force Matcher for Hamming distance
         self.orb = cv2.ORB_create(nfeatures=800)
         self.bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=False)
 
-    def _match_color(self, candidate_image: np.ndarray) -> tuple[float, str]:
+    def _preprocess_candidate(self, image: np.ndarray, class_id: int | None = None) -> np.ndarray:
+        """Upscale candidate crops that are too small before feature extraction."""
+        if image is None or image.size == 0:
+            return image
+        h, w = image.shape[:2]
+        target_min = 112  # minimum dimension for good feature extraction
+
+        if h < target_min or w < target_min:
+            scale = target_min / max(1, min(h, w))
+            new_w = max(1, int(round(w * scale)))
+            new_h = max(1, int(round(h * scale)))
+            image = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_CUBIC)
+
+        return image
+
+    def _match_color(self, candidate_image: np.ndarray, is_motorcycle: bool = False) -> tuple[float, str]:
         """Calculates color similarity against target histograms and detects color name."""
-        cand_hist = self.color_analyzer.compute_histogram(candidate_image)
-        cand_color = self.color_analyzer.get_dominant_color(candidate_image)
+        cand_hist = self.color_analyzer.compute_histogram(candidate_image, is_motorcycle=is_motorcycle)
+        cand_color = self.color_analyzer.get_dominant_color(candidate_image, is_motorcycle=is_motorcycle)
 
         if not self.target.color_histograms:
             return 0.5, cand_color
@@ -135,30 +161,48 @@ class VehicleMatcher:
         similarity = self.plate_reader.match_plate(detected_plate, self.target.plate_number)
         return similarity, detected_plate
 
-    def match(self, candidate_image: np.ndarray, threshold: float = 0.60) -> MatchResult:
+    def match(
+        self,
+        candidate_image: np.ndarray,
+        threshold: float = 0.60,
+        vehicle_class_id: int | None = None
+    ) -> MatchResult:
         """
         Executes complete multi-modal comparison pipeline on candidate vehicle crop.
+        Applies class-specific weights and preprocessing when vehicle_class_id is provided.
         """
         if candidate_image is None or candidate_image.size == 0:
             return MatchResult(0.0, 0.0, 0.0, 0.0, 0.0, None, "", False)
 
-        color_score, detected_color = self._match_color(candidate_image)
+        # Upscale crop if below minimum feature resolution
+        candidate_image = self._preprocess_candidate(candidate_image, vehicle_class_id)
+
+        is_motorcycle = (vehicle_class_id == 3)
+        color_score, detected_color = self._match_color(candidate_image, is_motorcycle=is_motorcycle)
         feature_score = self._match_orb_features(candidate_image)
         deep_score = self._match_deep_features(candidate_image)
         ocr_score, detected_plate = self._match_ocr(candidate_image)
 
-        # Dynamic weight adjustment if target plate was not provided
-        w_color = self.weights["color"]
-        w_feat = self.weights["feature"]
-        w_deep = self.weights["deep"]
-        w_ocr = self.weights["ocr"]
+        # Select weights profile based on vehicle class or custom weights
+        if self.weights:
+            profile_weights = dict(self.weights)
+        elif is_motorcycle:
+            profile_weights = dict(self.WEIGHT_PROFILES["motorcycle"])
+        else:
+            profile_weights = dict(self.WEIGHT_PROFILES["car"])
 
+        w_color = profile_weights.get("color", 0.25)
+        w_feat = profile_weights.get("feature", 0.25)
+        w_deep = profile_weights.get("deep", 0.40)
+        w_ocr = profile_weights.get("ocr", 0.10)
+
+        # Dynamic weight adjustment if target plate was not provided
         if not self.target.plate_number:
-            # Redistribute OCR weight across deep and color
             total_remaining = w_color + w_feat + w_deep
-            w_color = w_color / total_remaining
-            w_feat = w_feat / total_remaining
-            w_deep = w_deep / total_remaining
+            if total_remaining > 0:
+                w_color = w_color / total_remaining
+                w_feat = w_feat / total_remaining
+                w_deep = w_deep / total_remaining
             w_ocr = 0.0
 
         combined = (

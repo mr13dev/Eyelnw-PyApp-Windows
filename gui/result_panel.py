@@ -6,6 +6,7 @@ Displays detected events, confidence badges, screenshots, and report launch butt
 import os
 from pathlib import Path
 import subprocess
+from tkinter import messagebox
 import webbrowser
 import customtkinter as ctk
 from PIL import Image
@@ -169,6 +170,17 @@ class ResultPanel(ctk.CTkFrame):
         self.lbl_header.pack(side="left")
 
         # Global action buttons
+        self.btn_open_index = ctk.CTkButton(
+            top_header,
+            text="📚 ดูรายงานทั้งหมด",
+            command=self._on_open_index,
+            font=("Sarabun", 12, "bold"),
+            fg_color="#8957e5",
+            hover_color="#7048c6",
+            height=32
+        )
+        self.btn_open_index.pack(side="right", padx=(8, 0))
+
         self.btn_open_report = ctk.CTkButton(
             top_header,
             text="📄 เปิดรายงาน HTML",
@@ -308,3 +320,19 @@ class ResultPanel(ctk.CTkFrame):
     def _on_open_folder(self):
         if self.scan_folder_path and self.scan_folder_path.exists():
             os.startfile(str(self.scan_folder_path))
+
+    def _on_open_index(self):
+        output_dir = Path(__file__).resolve().parent.parent / "output"
+        index_file = output_dir / "index.html"
+        if not index_file.exists():
+            try:
+                from report.index_generator import ReportIndexGenerator
+                index_gen = ReportIndexGenerator(output_dir)
+                index_file = index_gen.generate_index()
+            except Exception:
+                pass
+
+        if index_file.exists():
+            webbrowser.open(index_file.as_uri())
+        else:
+            messagebox.showinfo("แจ้งเตือน", "ยังไม่มีรายงานการค้นหาที่ถูกบันทึกไว้")

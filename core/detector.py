@@ -21,6 +21,14 @@ class VehicleDetector:
         7: "รถบรรทุก (Truck)"
     }
 
+    # Minimum bounding box size by vehicle class
+    MIN_SIZE = {
+        2: (24, 24),   # car
+        3: (16, 16),   # motorcycle — reduced to catch far motorcycles
+        5: (30, 30),   # bus
+        7: (28, 28),   # truck
+    }
+
     def __init__(
         self,
         model_size: str = "n",
@@ -70,9 +78,10 @@ class VehicleDetector:
         self.model.to(self.device)
         logger.info("YOLOv8 initialized successfully.")
 
-    def detect(self, frame: np.ndarray) -> list[dict]:
+    def detect(self, frame: np.ndarray, motorcycle_conf_boost: float = -0.05) -> list[dict]:
         """
         Runs object detection on a single video frame.
+        Includes confidence boost and class-specific size criteria for motorcycles.
 
         Returns a list of dicts:
         [
@@ -91,10 +100,13 @@ class VehicleDetector:
 
         self._lazy_init()
 
+        # Lower base predict threshold slightly so motorcycle candidates are captured by YOLO
+        predict_conf = max(0.10, min(self.confidence_thresh, self.confidence_thresh + motorcycle_conf_boost))
+
         results = self.model.predict(
             source=frame,
             classes=self.vehicle_classes,
-            conf=self.confidence_thresh,
+            conf=predict_conf,
             device=self.device,
             verbose=False
         )
@@ -113,10 +125,20 @@ class VehicleDetector:
             conf = float(box.conf[0].item())
             xyxy = [int(v) for v in box.xyxy[0].tolist()]
 
-            # Ensure minimum bounding box size to filter out noise
+            # Class-specific confidence threshold
+            effective_conf = (
+                max(0.10, self.confidence_thresh + motorcycle_conf_boost)
+                if cls_id == 3
+                else self.confidence_thresh
+            )
+            if conf < effective_conf:
+                continue
+
+            # Ensure minimum bounding box size according to vehicle class
             w = xyxy[2] - xyxy[0]
             h = xyxy[3] - xyxy[1]
-            if w < 24 or h < 24:
+            min_w, min_h = self.MIN_SIZE.get(cls_id, (24, 24))
+            if w < min_w or h < min_h:
                 continue
 
             crop = safe_crop(frame, xyxy)

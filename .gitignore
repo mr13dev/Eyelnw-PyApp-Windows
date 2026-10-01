@@ -96,3 +96,4 @@ $RECYCLE.BIN/
 # 9. Logs & Runtime
 *.log
 logs/
+settings.json
