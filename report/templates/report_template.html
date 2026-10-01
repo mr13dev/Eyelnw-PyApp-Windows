@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>รายงานผลการค้นหารถเป้าหมาย — Eyelnw</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card-bg: #161b22;
+      --card-border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --primary: #2f81f7;
+      --success: #238636;
+      --warning: #d29922;
+      --danger: #f85149;
+      --accent: #a371f7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Sarabun', -apple-system, sans-serif;
+      line-height: 1.6;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #1f2937, #111827);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 28px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .header-title h1 {
+      font-size: 26px;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-title p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 18px;
+      text-align: center;
+    }
+
+    .stat-card .val {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--primary);
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .stat-card .lbl {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Target Vehicle Box */
+    .target-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #fff;
+    }
+
+    .target-details {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .target-meta {
+      flex: 1;
+      min-width: 260px;
+    }
+
+    .target-meta-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #21262d;
+      font-size: 14px;
+    }
+
+    .target-meta-item span:first-child {
+      color: var(--text-muted);
+    }
+
+    .target-photos {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .target-photos img {
+      width: 110px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      transition: transform 0.2s;
+    }
+
+    .target-photos img:hover {
+      transform: scale(1.08);
+    }
+
+    /* Event Cards */
+    .events-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .event-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 22px;
+      transition: border-color 0.2s;
+    }
+
+    .event-card:hover {
+      border-color: #58a6ff;
+    }
+
+    @media (max-width: 820px) {
+      .event-card {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .event-preview {
+      position: relative;
+    }
+
+    .event-preview img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 1px solid var(--card-border);
+    }
+
+    .badge-confidence {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .conf-high {
+      background: #238636;
+      color: #fff;
+    }
+
+    .conf-med {
+      background: #9e6a03;
+      color: #fff;
+    }
+
+    .conf-low {
+      background: #8957e5;
+      color: #fff;
+    }
+
+    .event-info {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .event-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .event-id {
+      font-size: 18px;
+      font-weight: 700;
+      color: #58a6ff;
+    }
+
+    .event-time {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .grid-info {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .grid-item {
+      background: #0d1117;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #21262d;
+    }
+
+    .grid-item .label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    .grid-item .value {
+      font-weight: 600;
+    }
+
+    /* Score Breakdown bars */
+    .score-breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .score-bar-row {
+      display: flex;
+      align-items: center;
+      font-size: 12px;
+      gap: 8px;
+    }
+
+    .score-bar-label {
+      width: 110px;
+      color: var(--text-muted);
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 6px;
+      background: #21262d;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--primary);
+    }
+
+    .score-bar-val {
+      width: 45px;
+      text-align: right;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .event-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-primary {
+      background: #238636;
+      color: #fff;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: #2ea043;
+    }
+
+    .btn-secondary {
+      background: #21262d;
+      color: var(--text);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-secondary:hover {
+      background: #30363d;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      padding: 20px;
+      color: var(--text-muted);
+      font-size: 13px;
+      border-top: 1px solid var(--card-border);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-title">
+        <h1>🔍 รายงานการค้นหารถเป้าหมาย — Eyelnw</h1>
+        <p>สร้างเมื่อ: {{ scan_time }} | ระบบตรวจสอบคลิป CCTV อัตโนมัติ</p>
+      </div>
+    </header>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="val">{{ total_matches }}</div>
+        <div class="lbl">พบรถเป้าหมาย (ครั้ง)</div>
+      </div>
+      <div class="stat-card">
+        <div class="val">{{ total_videos }}</div>
+        <div class="lbl">จำนวนไฟล์ CCTV ที่สแกน</div>
+      </div>
+      <div class="stat-card">
+        <div class="val">{{ highest_confidence }}%</div>
+        <div class="lbl">ความมั่นใจสูงสุด</div>
+      </div>
+      <div class="stat-card">
+        <div class="val">{{ scan_duration }}</div>
+        <div class="lbl">เวลาที่ใช้ประมวลผล</div>
+      </div>
+    </div>
+
+    <!-- Target Vehicle Profile -->
+    <div class="target-box">
+      <div class="section-title">🚗 ข้อมูลรถเป้าหมายที่ตามหา</div>
+      <div class="target-details">
+        <div class="target-meta">
+          <div class="target-meta-item">
+            <span>ยี่ห้อ / รุ่น:</span>
+            <span><strong>{{ target.car_brand or '-' }} {{ target.car_model or '' }}</strong></span>
+          </div>
+          <div class="target-meta-item">
+            <span>ป้ายทะเบียน:</span>
+            <span><strong>{{ target.plate_number or 'ไม่ได้ระบุ' }}</strong></span>
+          </div>
+          <div class="target-meta-item">
+            <span>สีที่ระบุ / สีหลัก:</span>
+            <span><strong>{{ target.car_color or target.dominant_color or '-' }}</strong></span>
+          </div>
+          <div class="target-meta-item">
+            <span>จำนวนภาพอ้างอิง:</span>
+            <span>{{ target.images|length }} รูป</span>
+          </div>
+        </div>
+        <div class="target-photos">
+          {% for img_rel in target_image_paths %}
+          <a href="{{ img_rel }}" target="_blank">
+            <img src="{{ img_rel }}" alt="รูปรถเป้าหมาย">
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Events List -->
+    <div class="section-title">⏱️ รายการช่วงเวลาที่ตรวจพบ</div>
+    <div class="events-container">
+      {% for event in events %}
+      <div class="event-card">
+        <div class="event-preview">
+          <a href="{{ event.screenshot_rel }}" target="_blank">
+            <img src="{{ event.screenshot_rel }}" alt="ภาพตรวจพบ">
+          </a>
+          <span class="badge-confidence {% if event.peak_confidence >= 0.80 %}conf-high{% elif event.peak_confidence >= 0.65 %}conf-med{% else %}conf-low{% endif %}">
+            {{ "%.1f"|format(event.peak_confidence * 100) }}% ความมั่นใจ
+          </span>
+        </div>
+
+        <div class="event-info">
+          <div>
+            <div class="event-header">
+              <span class="event-id">#{{ event.group_id }} {{ event.video_name }}</span>
+              <span class="event-time">⏱ {{ event.best_detection.timestamp_str }} ({{ "%.1f"|format(event.start_time) }}s - {{ "%.1f"|format(event.end_time) }}s)</span>
+            </div>
+
+            <div class="grid-info">
+              <div class="grid-item">
+                <div class="label">ทิศทางการเคลื่อนที่</div>
+                <div class="value">🧭 {{ event.direction }}</div>
+              </div>
+              <div class="grid-item">
+                <div class="label">สีที่ตรวจพบ</div>
+                <div class="value">🎨 {{ event.best_detection.match_result.detected_color }}</div>
+              </div>
+              <div class="grid-item">
+                <div class="label">ทะเบียน (OCR)</div>
+                <div class="value">📝 {{ event.best_detection.match_result.detected_plate or 'ไม่ชัดเจน' }}</div>
+              </div>
+              <div class="grid-item">
+                <div class="label">ประเภทรถ</div>
+                <div class="value">🚙 {{ event.best_detection.class_name }}</div>
+              </div>
+            </div>
+
+            <!-- Score Bars -->
+            <div class="score-breakdown">
+              <div class="score-bar-row">
+                <span class="score-bar-label">Deep Feature (40%):</span>
+                <div class="progress-track">
+                  <div class="progress-fill" style="width: {{ event.best_detection.match_result.deep_score * 100 }}%"></div>
+                </div>
+                <span class="score-bar-val">{{ "%.0f"|format(event.best_detection.match_result.deep_score * 100) }}%</span>
+              </div>
+              <div class="score-bar-row">
+                <span class="score-bar-label">Color Profile (25%):</span>
+                <div class="progress-track">
+                  <div class="progress-fill" style="width: {{ event.best_detection.match_result.color_score * 100 }}%; background: #2ea043;"></div>
+                </div>
+                <span class="score-bar-val">{{ "%.0f"|format(event.best_detection.match_result.color_score * 100) }}%</span>
+              </div>
+              <div class="score-bar-row">
+                <span class="score-bar-label">Keypoints ORB (25%):</span>
+                <div class="progress-track">
+                  <div class="progress-fill" style="width: {{ event.best_detection.match_result.feature_score * 100 }}%; background: #a371f7;"></div>
+                </div>
+                <span class="score-bar-val">{{ "%.0f"|format(event.best_detection.match_result.feature_score * 100) }}%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="event-actions">
+            {% if event.clip_rel %}
+            <a href="{{ event.clip_rel }}" class="btn btn-primary" target="_blank">🎬 ดูคลิปสั้น</a>
+            {% endif %}
+            <a href="{{ event.screenshot_rel }}" class="btn btn-secondary" target="_blank">📸 ดูภาพขนาดเต็ม</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+      {% if events|length == 0 %}
+      <div style="text-align: center; padding: 48px; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--card-border);">
+        <p style="font-size: 16px; color: var(--text-muted);">ไม่พบรถที่ตรงกับเกณฑ์ความเชื่อมั่นที่กำหนดในการสแกนครั้งนี้</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Eyelnw Vehicle Investigation System • ข้อมูลนี้สร้างขึ้นจากระบบอัตโนมัติเพื่อใช้เป็นเบาะแสเบื้องต้น</p>
+    </footer>
+  </div>
+</body>
+</html>

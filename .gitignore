@@ -1,0 +1,98 @@
+# ==========================================
+# Eyelnw — .gitignore
+# ==========================================
+
+# 1. Python Environment & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# 2. Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# 3. Model Weights & Large Checkpoints
+# (Keep .gitkeep so the folder structure is preserved)
+models/*.pt
+models/*.pth
+models/*.bin
+models/*.onnx
+models/*.engine
+models/*.tflite
+!models/.gitkeep
+
+# EasyOCR / PyTorch / Ultralytics cache
+.cache/
+torch_cache/
+runs/
+
+# 4. Scan Outputs & Reports
+# (Session folders: scan_YYYYMMDD_HHMMSS, screenshots, clips, data)
+output/*
+!output/.gitkeep
+
+# 5. Test Artifacts & Synthetic Media
+tests/temp_test/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 6. Video & Heavy Media Files (Test CCTV recordings)
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.flv
+*.wmv
+
+# 7. IDE & Editor Specific
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# 8. Operating System Specific
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# 9. Logs & Runtime
+*.log
+logs/
